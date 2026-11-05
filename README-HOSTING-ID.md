@@ -1,46 +1,65 @@
-# YSMParser Web 0.3.6
+# YSMParser Web 0.3.6 — Three.js Preview Edition
 
-Antarmuka statis untuk build WebAssembly YSMParser 0.3.6.
+Antarmuka web statis untuk YSMParser 0.3.6. Aplikasi menjalankan build WebAssembly YSMParser yang disediakan oleh proyek upstream OpenYSM/YSMParser, lalu mengemas hasil konversi menjadi ZIP. Versi ini juga menyediakan pratinjau model 3D berbasis Three.js untuk file geometri JSON dan tekstur yang berhasil diekspor.
 
-## Isi folder
+## Fitur
+
+- Konversi satu atau beberapa file `.ysm` melalui build WebAssembly YSMParser 0.3.6.
+- Pemrosesan dilakukan lokal di browser; file model tidak diunggah ke server.
+- Ekspor semua hasil parser menjadi arsip ZIP.
+- Pratinjau geometri model 3D melalui Three.js: orbit, zoom, pilihan model, pilihan tekstur, dan reset kamera.
+- Layout responsif untuk desktop dan perangkat seluler.
+- Tidak memerlukan backend.
+
+## Struktur berkas
 
 - `index.html` — halaman aplikasi.
-- `styles.css` — tampilan responsif.
-- `app.js` — integrasi UI, filesystem virtual Emscripten, dan pemanggilan CLI.
-- `zip.js` — pembuat arsip ZIP mandiri tanpa dependensi CDN.
-- `YSMParser.js` dan `YSMParser.wasm` — build WebAssembly asli dari arsip `YSMParser-0.3.6-wasm-web.tar.gz`.
-- `LICENSE.txt` — lisensi yang disertakan dalam arsip upstream.
+- `styles.css` — gaya antarmuka.
+- `app.js` — pemanggilan parser WASM, pengelolaan file, ZIP, dan integrasi pratinjau.
+- `three-preview.js` — renderer geometri Bedrock JSON menggunakan Three.js.
+- `zip.js` — pembuat ZIP lokal.
+- `YSMParser.js` dan `YSMParser.wasm` — build WebAssembly upstream YSMParser 0.3.6.
+- `LICENSE.txt` — lisensi asli dari repository upstream.
+- `THIRD-PARTY-NOTICES.md` — informasi library pihak ketiga.
 
 ## Menjalankan lokal
 
-Jangan membuka `index.html` langsung dengan `file://`. Jalankan server HTTP lokal dari folder ini, misalnya:
+Jangan membuka `index.html` langsung melalui `file://`. Jalankan server HTTP dari folder ini:
 
 ```bash
 python3 -m http.server 8080
 ```
 
-Lalu buka `http://localhost:8080`.
+Kemudian buka `http://localhost:8080`.
 
-## Hosting dengan GitHub Pages
+## Hosting di GitHub Pages
 
 1. Buat repository GitHub baru.
-2. Upload seluruh isi folder ini ke root repository (pastikan `index.html` berada di root).
+2. Ekstrak ZIP ini dan upload **seluruh isi folder** ke root repository. Pastikan `index.html`, `YSMParser.js`, dan `YSMParser.wasm` berada di root.
 3. Buka **Settings → Pages**.
 4. Pada **Build and deployment**, pilih **Deploy from a branch**.
-5. Pilih branch `main` dan folder `/ (root)`, lalu Save.
-6. Tunggu deployment selesai dan buka URL Pages yang diberikan GitHub.
+5. Pilih branch `main` dan folder `/ (root)`, lalu simpan.
+6. Tunggu proses deployment selesai, kemudian buka URL GitHub Pages.
 
-Jangan mengganti nama atau memisahkan `YSMParser.js` dan `YSMParser.wasm`; keduanya harus dapat diakses dari folder yang sama. Hosting harus menyajikan file `.wasm` dengan MIME type `application/wasm` untuk streaming compilation yang optimal. Loader Emscripten memiliki fallback ke pemuatan ArrayBuffer jika streaming gagal.
+Jangan memisahkan atau mengganti nama `YSMParser.js` dan `YSMParser.wasm`; loader mencari file WASM di lokasi relatif yang sama.
 
-## Catatan teknis dan batasan
+## Pratinjau 3D
 
-- File `.ysm` diproses di browser; aplikasi tidak mengunggah file model ke backend.
-- UI memanggil CLI WASM dengan argumen `-i /ysm_input -o /ysm_output -v`, mengikuti dokumentasi CLI upstream.
-- UI mengemas seluruh file yang ditemukan pada direktori output menjadi ZIP.
-- Build upstream yang tersedia hanya menyediakan CLI WASM, bukan API parser browser khusus. Karena itu, keberhasilan integrasi harus diuji menggunakan file `.ysm` yang valid. Jika build ini tidak menerima `callMain` berulang kali, atau CLI memiliki perilaku output berbeda, integrasi perlu disesuaikan berdasarkan log dan sampel uji.
-- ZIP dibuat di browser menggunakan `zip.js`, tanpa backend atau dependensi CDN tambahan.
-- Untuk file besar, penggunaan memori browser dapat meningkat karena file input, output virtual, dan ZIP berada di memori.
+Pratinjau membaca file model JSON di `models/` yang dihasilkan parser (format geometri `minecraft:geometry`) dan file PNG di `textures/`. Pemilihan tekstur awal mencoba mengikuti referensi `files.player.texture[0].uv` di `ysm.json`, lalu menggunakan tekstur pertama jika metadata tersebut tidak tersedia.
 
-## Sumber
+Three.js dan OrbitControls dimuat dari jsDelivr CDN dengan versi tetap `0.180.0`. Karena itu, **koneksi internet diperlukan untuk fitur pratinjau 3D**. Jika CDN tidak dapat diakses, konversi WASM dan unduhan ZIP tetap tersedia; hanya viewer 3D yang tidak aktif.
 
-Mesin parser dan build WASM berasal dari OpenYSM/YSMParser, versi 0.3.6. Antarmuka web di folder ini adalah wrapper tambahan, bukan bagian dari rilis upstream.
+Pratinjau ini ditujukan sebagai viewer geometri statis. Animasi, controller, material khusus, render state, dan seluruh perilaku runtime YSM tidak disimulasikan. Pemetaan UV dan orientasi sumbu mungkin berbeda pada sebagian model kompleks.
+
+## Catatan teknis
+
+- Wrapper menjalankan CLI WASM dengan argumen `-i /ysm_input -o /ysm_output -v`.
+- File hasil konversi disimpan sementara di memori browser untuk pratinjau dan pembuatan ZIP.
+- Model besar dapat menggunakan memori cukup banyak.
+- Hasil pratinjau bukan pengganti pemeriksaan proyek di Blockbench atau Minecraft.
+
+## Lisensi dan atribusi
+
+Mesin parser dan build WebAssembly berasal dari [OpenYSM/YSMParser](https://github.com/OpenYSM/YSMParser), versi 0.3.6. File `LICENSE.txt` disalin dari lisensi asli pada source repository upstream dan dipertahankan tanpa perubahan. Antarmuka web, integrasi viewer, dan dokumentasi tambahan adalah wrapper komunitas yang terpisah dan bukan rilis resmi upstream.
+
+Lihat `THIRD-PARTY-NOTICES.md` untuk atribusi Three.js dan OrbitControls.

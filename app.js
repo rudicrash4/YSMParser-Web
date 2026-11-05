@@ -12,6 +12,8 @@
   let parserModule = null;
   let parserPromise = null;
   let outputBlob = null;
+  let outputEntries = [];
+  let previewInstance = null;
   let busy = false;
   const logs = [];
 
@@ -58,7 +60,7 @@
     if (incoming.length === 0) log('Tidak ada file .ysm yang ditemukan.');
   }
   input.addEventListener('change', e => { addFiles(e.target.files); input.value = ''; });
-  $('clearFiles').addEventListener('click', () => { selectedFiles = []; refreshFiles(); resultCard.hidden = true; });
+  $('clearFiles').addEventListener('click', () => { selectedFiles = []; refreshFiles(); resultCard.hidden = true; $('previewCard').hidden = true; if (previewInstance) { previewInstance.dispose(); previewInstance = null; } });
   for (const eventName of ['dragenter', 'dragover']) dropzone.addEventListener(eventName, e => { e.preventDefault(); dropzone.classList.add('dragover'); });
   for (const eventName of ['dragleave', 'drop']) dropzone.addEventListener(eventName, e => { e.preventDefault(); dropzone.classList.remove('dragover'); });
   dropzone.addEventListener('drop', e => addFiles(e.dataTransfer.files));
@@ -153,9 +155,12 @@
       }
       if (typeof window.createZipBlob !== 'function') throw new Error('Modul ZIP tidak berhasil dimuat. Pastikan zip.js ada di folder aplikasi.');
       const zipFiles = [];
+      outputEntries = [];
       for (const path of outputFiles) {
         const relative = path.replace(/^\/ysm_output\//, '');
-        zipFiles.push({ name: relative, data: FS.readFile(path) });
+        const data = FS.readFile(path);
+        zipFiles.push({ name: relative, data });
+        outputEntries.push({ path: relative, data: new Uint8Array(data) });
         log(`Output: ${relative}`);
       }
       setProgress(90, 'Membuat arsip ZIP…');
@@ -163,6 +168,7 @@
       setProgress(99, 'Menyelesaikan arsip ZIP…');
       $('resultSummary').textContent = `${outputFiles.length} file berhasil dikemas · ${formatSize(outputBlob.size)}`;
       resultCard.hidden = false;
+      await setupPreview(outputEntries);
       setProgress(100, 'Selesai');
       log(`Selesai. ${outputFiles.length} file dikemas ke ZIP.`);
     } catch (error) {
@@ -174,6 +180,76 @@
       busy = false; convertButton.disabled = selectedFiles.length === 0;
     }
   }
+  function basename(path) { return path.split('/').pop(); }
+  function isModelJson(path) { return /^models\/.+\.json$/i.test(path) || /(^|\/)geometry.*\.json$/i.test(path); }
+  async function setupPreview(entries) {
+    const modelEntries = entries.filter(e => isModelJson(e.path));
+    const textureEntries = entries.filter(e => /^textures\/.+\.png$/i.test(e.path));
+    const card = $('previewCard');
+    if (!modelEntries.length) {
+      if (previewInstance) { previewInstance.dispose(); previewInstance = null; }
+      card.hidden = true;
+      log('Pratinjau 3D dilewati: tidak ditemukan file geometri JSON di folder models/.');
+      return;
+    }
+    card.hidden = false;
+    $('viewerMessage').hidden = false;
+    $('viewerMessage').textContent = 'Memuat komponen Three.js…';
+    $('previewStatus').textContent = `${modelEntries.length} model · ${textureEntries.length} tekstur`;
+    const modelSelect = $('modelSelect');
+    const textureSelect = $('textureSelect');
+    modelSelect.replaceChildren(); textureSelect.replaceChildren();
+    for (const entry of modelEntries) {
+      const option = document.createElement('option'); option.value = entry.path; option.textContent = entry.path; modelSelect.append(option);
+    }
+    for (const entry of textureEntries) {
+      const option = document.createElement('option'); option.value = entry.path; option.textContent = entry.path; textureSelect.append(option);
+    }
+    // Prefer main model and texture path referenced by ysm.json when present.
+    const main = modelEntries.find(e => /models\/main\.json$/i.test(e.path)) || modelEntries[0];
+    modelSelect.value = main.path;
+    let preferredTexture = textureEntries[0];
+    const meta = entries.find(e => /(^|\/)ysm\.json$/i.test(e.path));
+    if (meta) {
+      try {
+        const j = JSON.parse(new TextDecoder().decode(meta.data));
+        const ref = j?.files?.player?.texture?.[0]?.uv;
+        if (ref) preferredTexture = textureEntries.find(t => t.path.toLowerCase() === String(ref).toLowerCase()) || preferredTexture;
+      } catch {}
+    }
+    if (preferredTexture) textureSelect.value = preferredTexture.path;
+    const modelFiles = modelEntries.map(e => ({ path: e.path, blob: new Blob([e.data], {type:'application/json'}) }));
+    const textureFiles = textureEntries.map(e => ({ path: e.path, blob: new Blob([e.data], {type:'image/png'}) }));
+    try {
+      const { createYSMPreview } = await import('./three-preview.js');
+      if (previewInstance) { previewInstance.dispose(); previewInstance = null; }
+      previewInstance = createYSMPreview($('modelViewer'), modelFiles, textureFiles);
+      const draw = async () => {
+        $('viewerMessage').hidden = false;
+        $('viewerMessage').textContent = 'Membaca geometri model…';
+        try {
+          await previewInstance.loadModel(modelSelect.value, textureSelect.value || null);
+          $('viewerMessage').hidden = true;
+          $('previewStatus').textContent = `Menampilkan ${basename(modelSelect.value)}`;
+        } catch (error) {
+          $('viewerMessage').hidden = false;
+          $('viewerMessage').textContent = `Pratinjau tidak tersedia: ${error.message || error}`;
+          $('previewStatus').textContent = 'Gagal memuat model';
+          log(`Pratinjau 3D: ${error.message || error}`);
+        }
+      };
+      modelSelect.onchange = draw;
+      textureSelect.onchange = draw;
+      $('resetViewButton').onclick = () => previewInstance?.reset();
+      await draw();
+    } catch (error) {
+      $('viewerMessage').hidden = false;
+      $('viewerMessage').textContent = `Three.js gagal dimuat. Periksa koneksi internet. (${error.message || error})`;
+      $('previewStatus').textContent = 'Library 3D tidak tersedia';
+      log(`Three.js tidak dapat dimuat: ${error.message || error}`);
+    }
+  }
+
   convertButton.addEventListener('click', runConversion);
   $('downloadButton').addEventListener('click', () => {
     if (!outputBlob) return;

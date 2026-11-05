@@ -68,16 +68,35 @@
         <button class="download-button" id="downloadButton" type="button">Unduh ZIP ↓</button>
       </section>
 
+
+      <section class="preview-card card" id="previewCard" hidden>
+        <div class="section-heading preview-heading">
+          <div><span class="step">04</span><h2>Pratinjau model 3D</h2></div>
+          <span class="muted" id="previewStatus">Menunggu hasil konversi</span>
+        </div>
+        <div class="preview-controls">
+          <label>Model <select id="modelSelect" aria-label="Pilih model"></select></label>
+          <label>Tekstur <select id="textureSelect" aria-label="Pilih tekstur"></select></label>
+          <button id="resetViewButton" class="text-button" type="button">Reset kamera</button>
+        </div>
+        <div class="viewer-wrap" id="viewerWrap">
+          <div id="modelViewer" role="img" aria-label="Pratinjau model tiga dimensi"></div>
+          <div class="viewer-empty" id="viewerMessage">Menyiapkan pratinjau 3D…</div>
+          <div class="viewer-hint">Seret untuk memutar · Scroll untuk zoom · Geser dua jari di layar sentuh</div>
+        </div>
+        <p class="preview-note">Pratinjau dibuat dari file geometri dan tekstur hasil ekspor. Beberapa detail khusus YSM atau animasi belum tentu tampil sama seperti di Minecraft.</p>
+      </section>
+
       <section class="info-grid">
         <article class="info-card"><span>01 / INPUT</span><h3>File YSM</h3><p>Pilih satu atau beberapa file dengan ekstensi <code>.ysm</code>.</p></article>
         <article class="info-card"><span>02 / PROCESS</span><h3>Parser asli</h3><p>Mesin YSMParser 0.3.6 berjalan melalui WebAssembly.</p></article>
         <article class="info-card"><span>03 / OUTPUT</span><h3>Proyek ZIP</h3><p>Hasil folder output dikemas menjadi satu file ZIP.</p></article>
       </section>
 
-      <div class="notice"><strong>Catatan:</strong> Ini adalah antarmuka web untuk build WASM resmi. Build yang tersedia menggunakan CLI; integrasi browser ini menjalankan argumen <code>-i</code> dan <code>-o</code>. Pengujian konversi dengan sampel YSM tetap diperlukan untuk memastikan hasil pada deployment-mu.</div>
+      <div class="notice"><strong>Catatan:</strong> Mesin konversi menggunakan build WebAssembly YSMParser 0.3.6. Pratinjau 3D menggunakan Three.js dan memerlukan koneksi internet untuk memuat library dari CDN. Proses konversi dan ekspor tetap berjalan lokal di browser.</div>
     </main>
 
-    <footer><span>YSMParser Web · v0.3.6</span><span>Powered by OpenYSM · WebAssembly</span></footer>
+    <footer><span>YSMParser Web · v0.3.6</span><span>Powered by OpenYSM · WebAssembly · Three.js</span></footer>
   </div>
 </body>
 </html>
