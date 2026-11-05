@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#0b0d12">
+  <meta name="description" content="Konversi file model YSM menjadi proyek Blockbench langsung di browser menggunakan YSMParser WebAssembly.">
+  <title>YSMParser Web 0.3.6</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="zip.js" defer></script>
+  <script src="YSMParser.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="#top" aria-label="YSMParser Web beranda">
+        <span class="brand-mark">Y</span>
+        <span><strong>YSMParser</strong><small>WEB EDITION · 0.3.6</small></span>
+      </a>
+      <span class="engine-badge"><i></i> WebAssembly</span>
+    </header>
+
+    <main id="top">
+      <section class="hero">
+        <div class="eyebrow">MODEL CONVERTER · RUNS LOCALLY</div>
+        <h1>Ubah model <span>.ysm</span><br>menjadi proyek Blockbench.</h1>
+        <p>Proses model langsung di browser menggunakan mesin YSMParser. File yang dipilih tidak diunggah ke server.</p>
+      </section>
+
+      <section class="workspace card">
+        <div class="section-heading">
+          <div><span class="step">01</span><h2>Pilih file model</h2></div>
+          <span class="muted">YSMParser 0.3.6</span>
+        </div>
+
+        <label class="dropzone" id="dropzone" for="fileInput" tabindex="0">
+          <input id="fileInput" type="file" accept=".ysm" multiple hidden>
+          <span class="upload-icon">↑</span>
+          <strong>Tarik file .ysm ke sini</strong>
+          <span>atau <u>pilih dari perangkat</u></span>
+          <small>Mendukung beberapa file sekaligus</small>
+        </label>
+
+        <div class="file-toolbar" id="fileToolbar" hidden>
+          <span id="fileCount">0 file dipilih</span>
+          <button class="text-button" id="clearFiles" type="button">Hapus semua</button>
+        </div>
+        <ul class="file-list" id="fileList" aria-live="polite"></ul>
+
+        <div class="actions">
+          <button class="primary-button" id="convertButton" type="button" disabled>
+            <span>▶</span> Mulai konversi
+          </button>
+          <span class="privacy-note">⚑ Pemrosesan dilakukan di perangkatmu</span>
+        </div>
+      </section>
+
+      <section class="progress-card card" id="progressCard" hidden>
+        <div class="progress-top"><strong id="statusTitle">Menyiapkan parser…</strong><span id="progressPercent">0%</span></div>
+        <div class="progress-track"><div id="progressBar"></div></div>
+        <pre id="consoleOutput" aria-live="polite">Menunggu proses…</pre>
+      </section>
+
+      <section class="result-card card" id="resultCard" hidden>
+        <div class="result-icon">✓</div>
+        <div class="result-copy"><strong>Proses selesai</strong><span id="resultSummary">Hasil siap diunduh.</span></div>
+        <button class="download-button" id="downloadButton" type="button">Unduh ZIP ↓</button>
+      </section>
+
+      <section class="info-grid">
+        <article class="info-card"><span>01 / INPUT</span><h3>File YSM</h3><p>Pilih satu atau beberapa file dengan ekstensi <code>.ysm</code>.</p></article>
+        <article class="info-card"><span>02 / PROCESS</span><h3>Parser asli</h3><p>Mesin YSMParser 0.3.6 berjalan melalui WebAssembly.</p></article>
+        <article class="info-card"><span>03 / OUTPUT</span><h3>Proyek ZIP</h3><p>Hasil folder output dikemas menjadi satu file ZIP.</p></article>
+      </section>
+
+      <div class="notice"><strong>Catatan:</strong> Ini adalah antarmuka web untuk build WASM resmi. Build yang tersedia menggunakan CLI; integrasi browser ini menjalankan argumen <code>-i</code> dan <code>-o</code>. Pengujian konversi dengan sampel YSM tetap diperlukan untuk memastikan hasil pada deployment-mu.</div>
+    </main>
+
+    <footer><span>YSMParser Web · v0.3.6</span><span>Powered by OpenYSM · WebAssembly</span></footer>
+  </div>
+</body>
+</html>
