@@ -181,45 +181,64 @@
     }
   }
   function basename(path) { return path.split('/').pop(); }
-  function isModelJson(path) { return /^models\/.+\.json$/i.test(path) || /(^|\/)geometry.*\.json$/i.test(path); }
+  function isJsonEntry(entry) { return /\.json$/i.test(entry.path) && !/(^|\/)(ysm|info)\.json$/i.test(entry.path); }
+  function containsGeometry(json) {
+    const geometries = json?.['minecraft:geometry'] ?? json?.geometry ?? json;
+    if (Array.isArray(geometries)) return geometries.some(g => g && Array.isArray(g.bones));
+    return !!(geometries && Array.isArray(geometries.bones));
+  }
   async function setupPreview(entries) {
-    const modelEntries = entries.filter(e => isModelJson(e.path));
-    const textureEntries = entries.filter(e => /^textures\/.+\.png$/i.test(e.path));
+    // YSMParser menaruh setiap hasil di subfolder berdasarkan nama file input,
+    // misalnya <nama-file>/models/main.json. Jangan mengasumsikan models/ ada di root.
+    const modelEntries = [];
+    for (const entry of entries.filter(isJsonEntry)) {
+      try {
+        const json = JSON.parse(new TextDecoder().decode(entry.data));
+        if (containsGeometry(json)) modelEntries.push(entry);
+      } catch { /* Abaikan JSON non-model atau file yang tidak valid. */ }
+    }
+    const textureEntries = entries.filter(e => /(^|\/)textures\/.+\.png$/i.test(e.path));
+    const availablePngs = textureEntries.length ? textureEntries : entries.filter(e => /\.png$/i.test(e.path));
     const card = $('previewCard');
+    card.hidden = false;
+    const controls = $('previewControls');
     if (!modelEntries.length) {
       if (previewInstance) { previewInstance.dispose(); previewInstance = null; }
-      card.hidden = true;
-      log('Pratinjau 3D dilewati: tidak ditemukan file geometri JSON di folder models/.');
+      controls.hidden = true;
+      $('viewerMessage').hidden = false;
+      $('viewerMessage').textContent = 'File hasil konversi tidak berisi JSON geometri yang dikenali. Periksa isi ZIP dan log proses.';
+      $('previewStatus').textContent = 'Geometri model tidak ditemukan';
+      log('Pratinjau 3D tidak dapat dibuat: tidak ditemukan JSON dengan struktur minecraft:geometry/bones pada seluruh folder output.');
       return;
     }
-    card.hidden = false;
+    controls.hidden = false;
     $('viewerMessage').hidden = false;
     $('viewerMessage').textContent = 'Memuat komponen Three.js…';
-    $('previewStatus').textContent = `${modelEntries.length} model · ${textureEntries.length} tekstur`;
+    $('previewStatus').textContent = `${modelEntries.length} model · ${availablePngs.length} tekstur`;
     const modelSelect = $('modelSelect');
     const textureSelect = $('textureSelect');
     modelSelect.replaceChildren(); textureSelect.replaceChildren();
     for (const entry of modelEntries) {
       const option = document.createElement('option'); option.value = entry.path; option.textContent = entry.path; modelSelect.append(option);
     }
-    for (const entry of textureEntries) {
+    for (const entry of availablePngs) {
       const option = document.createElement('option'); option.value = entry.path; option.textContent = entry.path; textureSelect.append(option);
     }
     // Prefer main model and texture path referenced by ysm.json when present.
     const main = modelEntries.find(e => /models\/main\.json$/i.test(e.path)) || modelEntries[0];
     modelSelect.value = main.path;
-    let preferredTexture = textureEntries[0];
+    let preferredTexture = availablePngs[0];
     const meta = entries.find(e => /(^|\/)ysm\.json$/i.test(e.path));
     if (meta) {
       try {
         const j = JSON.parse(new TextDecoder().decode(meta.data));
         const ref = j?.files?.player?.texture?.[0]?.uv;
-        if (ref) preferredTexture = textureEntries.find(t => t.path.toLowerCase() === String(ref).toLowerCase()) || preferredTexture;
+        if (ref) preferredTexture = availablePngs.find(t => t.path.toLowerCase() === String(ref).toLowerCase() || t.path.toLowerCase().endsWith('/' + String(ref).toLowerCase().replace(/^\/+/, ''))) || preferredTexture;
       } catch {}
     }
     if (preferredTexture) textureSelect.value = preferredTexture.path;
     const modelFiles = modelEntries.map(e => ({ path: e.path, blob: new Blob([e.data], {type:'application/json'}) }));
-    const textureFiles = textureEntries.map(e => ({ path: e.path, blob: new Blob([e.data], {type:'image/png'}) }));
+    const textureFiles = availablePngs.map(e => ({ path: e.path, blob: new Blob([e.data], {type:'image/png'}) }));
     try {
       const { createYSMPreview } = await import('./three-preview.js');
       if (previewInstance) { previewInstance.dispose(); previewInstance = null; }

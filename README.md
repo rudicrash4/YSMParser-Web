@@ -45,7 +45,7 @@ Jangan memisahkan atau mengganti nama `YSMParser.js` dan `YSMParser.wasm`; loade
 
 ## Pratinjau 3D
 
-Pratinjau membaca file model JSON di `models/` yang dihasilkan parser (format geometri `minecraft:geometry`) dan file PNG di `textures/`. Pemilihan tekstur awal mencoba mengikuti referensi `files.player.texture[0].uv` di `ysm.json`, lalu menggunakan tekstur pertama jika metadata tersebut tidak tersedia.
+Pratinjau memindai seluruh folder hasil konversi secara rekursif untuk menemukan JSON dengan struktur geometri `minecraft:geometry`/`bones`, termasuk struktur output CLI YSMParser yang menaruh setiap hasil di subfolder bernama file input (contoh: `<nama-file>/models/main.json`). Tekstur PNG dicari di folder `textures/`; jika folder tersebut tidak tersedia, viewer mencoba PNG lain yang diekspor. Pemilihan tekstur awal mencoba mengikuti referensi `files.player.texture[0].uv` di `ysm.json`, lalu menggunakan tekstur pertama jika metadata tersebut tidak tersedia.
 
 Three.js dan OrbitControls dimuat dari jsDelivr CDN dengan versi tetap `0.180.0`. Karena itu, **koneksi internet diperlukan untuk fitur pratinjau 3D**. Jika CDN tidak dapat diakses, konversi WASM dan unduhan ZIP tetap tersedia; hanya viewer 3D yang tidak aktif.
 

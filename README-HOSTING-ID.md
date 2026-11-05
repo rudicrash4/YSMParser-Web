@@ -63,3 +63,8 @@ Pratinjau ini ditujukan sebagai viewer geometri statis. Animasi, controller, mat
 Mesin parser dan build WebAssembly berasal dari [OpenYSM/YSMParser](https://github.com/OpenYSM/YSMParser), versi 0.3.6. File `LICENSE.txt` disalin dari lisensi asli pada source repository upstream dan dipertahankan tanpa perubahan. Antarmuka web, integrasi viewer, dan dokumentasi tambahan adalah wrapper komunitas yang terpisah dan bukan rilis resmi upstream.
 
 Lihat `THIRD-PARTY-NOTICES.md` untuk atribusi Three.js dan OrbitControls.
+
+
+## Catatan perbaikan pratinjau 3D
+
+Versi ini mendeteksi file geometri JSON secara rekursif. YSMParser menyimpan setiap hasil konversi di subfolder berdasarkan nama file `.ysm`, sehingga file model umumnya berada di jalur seperti `<nama-file>/models/main.json`, bukan langsung `models/main.json` di root output. Viewer sekarang membaca struktur tersebut dan tetap menampilkan panel status jika geometri tidak ditemukan.
